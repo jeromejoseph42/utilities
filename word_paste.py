@@ -1,8 +1,10 @@
 import pyperclip
+import pyautogui
 import re
 import keyboard
 import winsound
 import time
+import threading
 
 
 text = pyperclip.paste()
@@ -146,11 +148,59 @@ def read_highlight():
     keyboard.send("ctrl+shift+right")
     time.sleep(0.05)
 
+auto_running = False
+def auto_loop():
+    global auto_running
+    if auto_running:
+        print("[AUTO] Already running.")
+        return
+    auto_running = True
+
+    def worker():
+        global auto_running
+        time.sleep(0.05)
+        for key in ("ctrl", "shift", "alt", "f9"):
+            try: keyboard.release(key)
+            except: pass
+        time.sleep(5)
+
+        pause_event = threading.Event()
+        pause_hook = keyboard.hook_key("pause", lambda e: e.event_type == "down" and pause_event.set(), suppress=True)
+
+        try:
+            while auto_running:
+                time.sleep(5)
+                pyautogui.click(702, 325);  time.sleep(1.5)
+                keyboard.send("ctrl+p");    time.sleep(0.2)
+                pyautogui.click(702, 632);  time.sleep(1)
+                copy_and_sync();            time.sleep(0.5)
+                print("[AUTO] PAUSE to submit | ESC to stop")
+                pause_event.clear()
+                pause_event.wait()
+                if not auto_running: break
+                pyautogui.click(1100, 1010);    time.sleep(1)
+                pyautogui.click(1146, 622);     time.sleep(5)
+                keyboard.send("f6");            time.sleep(0.3)
+                keyboard.send("ctrl+c");        time.sleep(0.4)
+                url = pyperclip.paste()
+                match = re.search(r'task=(\d+)', url)
+                if not match: print("[AUTO] No task ID."); break
+                pyperclip.copy(re.sub(r'task=\d+', f'task={int(match.group(1))+1}', url))
+                keyboard.send("ctrl+v");    time.sleep(0.3)
+                keyboard.send("enter");     time.sleep(4)
+        finally:
+            keyboard.unhook(pause_hook)
+            auto_running = False
+            print("[AUTO] Ended")
+
+    threading.Thread(target=worker, daemon=True).start()
+
 print("Controls:")
 print("F8 -> paste next")
 print("F7 -> go back")
 print("F9 -> SMART SYNC")
 print("ctrl+F9 -> select all, copy and SMART SYNC")
+print("ctrl+shift+F9 -> select all, copy and SMART SYNC")
 print("Numpad decimal -> Reading Highlighter")
 print("ESC -> quit\n")
 print(f"Starting with [{i}] {repr(tokens[i])}")
@@ -159,6 +209,7 @@ keyboard.add_hotkey("F8", paste_next)
 keyboard.add_hotkey("F7", go_back)
 keyboard.add_hotkey("F9", smart_sync)
 keyboard.add_hotkey("ctrl+f9", copy_and_sync)
+keyboard.add_hotkey("ctrl+shift+f9", auto_loop, suppress=True, trigger_on_release=True)
 keyboard.add_hotkey("decimal", read_highlight)
 
 keyboard.wait("esc")
