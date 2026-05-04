@@ -148,6 +148,12 @@ def read_highlight():
     keyboard.send("ctrl+shift+right")
     time.sleep(0.05)
 
+def pause_clicks():
+    pyautogui.click(1205, 1005)
+    time.sleep(1.2)
+    pyautogui.click(1209, 633)
+    print("[PAUSE] Submitted.")
+
 auto_running = False
 def auto_loop():
     global auto_running
@@ -162,14 +168,14 @@ def auto_loop():
         for key in ("ctrl", "shift", "alt", "f9"):
             try: keyboard.release(key)
             except: pass
-        time.sleep(5)
+        time.sleep(4)
 
         pause_event = threading.Event()
         pause_hook = keyboard.hook_key("pause", lambda e: e.event_type == "down" and pause_event.set(), suppress=True)
 
         try:
             while auto_running:
-                time.sleep(5)
+                time.sleep(2.5)
                 pyautogui.click(702, 325);  time.sleep(1.5)
                 keyboard.send("ctrl+p");    time.sleep(0.2)
                 pyautogui.click(702, 632);  time.sleep(1)
@@ -178,16 +184,16 @@ def auto_loop():
                 pause_event.clear()
                 pause_event.wait()
                 if not auto_running: break
-                pyautogui.click(1100, 1010);    time.sleep(1)
-                pyautogui.click(1146, 622);     time.sleep(5)
-                keyboard.send("f6");            time.sleep(0.3)
-                keyboard.send("ctrl+c");        time.sleep(0.4)
-                url = pyperclip.paste()
-                match = re.search(r'task=(\d+)', url)
-                if not match: print("[AUTO] No task ID."); break
-                pyperclip.copy(re.sub(r'task=\d+', f'task={int(match.group(1))+1}', url))
-                keyboard.send("ctrl+v");    time.sleep(0.3)
-                keyboard.send("enter");     time.sleep(4)
+                pause_clicks()
+                break
+                # keyboard.send("ctrl+l");            time.sleep(0.3)
+                # keyboard.send("ctrl+c");        time.sleep(0.5)
+                # url = pyperclip.paste()
+                # match = re.search(r'task=(\d+)', url)
+                # if not match: print("[AUTO] No task ID."); break
+                # pyperclip.copy(re.sub(r'task=\d+', f'task={int(match.group(1))+1}', url))
+                # keyboard.send("ctrl+v");    time.sleep(0.3)
+                # keyboard.send("enter");     time.sleep(4)
         finally:
             keyboard.unhook(pause_hook)
             auto_running = False
@@ -211,5 +217,6 @@ keyboard.add_hotkey("F9", smart_sync)
 keyboard.add_hotkey("ctrl+f9", copy_and_sync)
 keyboard.add_hotkey("ctrl+shift+f9", auto_loop, suppress=True, trigger_on_release=True)
 keyboard.add_hotkey("decimal", read_highlight)
+keyboard.add_hotkey("pause", pause_clicks)
 
 keyboard.wait("esc")
